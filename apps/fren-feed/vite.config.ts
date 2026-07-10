@@ -6,15 +6,10 @@ export default defineConfig({
 	plugins: [
 		sveltekit({
 			compilerOptions: {
-				// Force runes mode for the project, except for libraries. Can be removed in svelte 6.
-				// Workspace-linked packages (e.g. cyphertap) resolve through their symlink to
-				// real paths outside this app with no node_modules segment, so also treat
-				// anything outside the app dir as a library.
+				// Force runes mode everywhere (cyphertap included — it's fully runes),
+				// except third-party libraries. Can be removed in svelte 6.
 				runes: ({ filename }) =>
-					filename.split(/[/\\]/).includes('node_modules') ||
-					!filename.startsWith(import.meta.dirname)
-						? undefined
-						: true
+					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
 
 			// Static SPA build for GitHub Pages: the app is fully client-side

@@ -1,7 +1,4 @@
-// cyphertap is browser-only (localStorage keys, IndexedDB cache, WebSockets).
-// Drop this when the library's SSR-safety phase lands.
-export const ssr = false;
-
-// Prerender the (empty, ssr-less) HTML shell so adapter-static emits an
-// index.html for GitHub Pages; the app fully renders client-side.
+// Prerender the HTML shell so adapter-static emits an index.html for GitHub
+// Pages. The cyphertap widget SSRs as a placeholder and the app content
+// renders after hydration (everything meaningful is client-side).
 export const prerender = true;
