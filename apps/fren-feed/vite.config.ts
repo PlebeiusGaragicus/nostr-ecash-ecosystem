@@ -1,4 +1,4 @@
-import adapter from '@sveltejs/adapter-auto';
+import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
@@ -17,10 +17,14 @@ export default defineConfig({
 						: true
 			},
 
-			// adapter-auto only supports some environments, see https://svelte.dev/docs/kit/adapter-auto for a list.
-			// If your environment is not supported, or you settled on a specific environment, switch out the adapter.
-			// See https://svelte.dev/docs/kit/adapters for more information about adapters.
-			adapter: adapter()
+			// Static SPA build for GitHub Pages: the app is fully client-side
+			// (ssr=false), so we prerender the empty shell as index.html and use
+			// 404.html as the SPA fallback (how Pages routes unknown paths).
+			adapter: adapter({ fallback: '404.html' }),
+			paths: {
+				// Set by the Pages deploy workflow, e.g. /nostr-ecash-ecosystem
+				base: (process.env.BASE_PATH as `/${string}` | undefined) || ''
+			}
 		})
 	]
 });
