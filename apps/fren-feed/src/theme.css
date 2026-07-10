@@ -1,0 +1,11 @@
+/* App theme overrides for the cyphertap widget — see cyphertap/docs/THEMING.md.
+   :root:root beats the library's :root regardless of Vite CSS order. */
+:root:root {
+	--primary: oklch(0.55 0.2 260);
+	--primary-foreground: oklch(0.98 0 0);
+	--radius: 0.375rem;
+}
+
+:root:root.dark {
+	--primary: oklch(0.7 0.19 260);
+}
