@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Cyphertap, cyphertap } from 'cyphertap';
 
-	const RELAYS = ['wss://relay.cypherflow.ai', 'wss://relay.damus.io'];
+	const RELAYS = ['wss://relay.abvstudio.net']; // own whitelisted strfry — log in with a .test-accounts.json key
 </script>
 
 <main>
@@ -9,7 +9,7 @@
 	<p>A minimal app consuming the cyphertap library from the workspace.</p>
 
 	<div class="tap">
-		<Cyphertap relays={RELAYS} />
+		<Cyphertap relays={RELAYS} mints={['https://nofee.testnut.cashu.space']} />
 	</div>
 
 	{#if cyphertap.isLoggedIn}

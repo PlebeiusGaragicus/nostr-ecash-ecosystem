@@ -67,6 +67,27 @@ auto-deploys its showcase. **A broken merge ships.**
 - Theme overrides must use `:root:root` and be verified against a `vite
   build`, not just dev — CSS order differs. (THEMING.md.)
 
+## Test infrastructure (2026-07-10)
+
+- **Relay**: `wss://relay.abvstudio.net` — our own strfry on the mac mini
+  (homelab repo: `~/Downloads/2026-project`, docs/strfry.md), whitelisted:
+  only pubkeys in `~/.strfry/whitelist.d/*.txt` (ssh host `mini`) can
+  publish; the app group file is `cyphertap.txt`. "Create new account" in
+  the apps generates a key the relay rejects — log in with a test account
+  instead. `relay.plebchat.me` is prepped in the homelab Caddyfile but needs
+  a DNS A record → 172.232.162.250 before it works.
+- **Test accounts**: `.test-accounts.json` (gitignored, repo root) — three
+  whitelisted keypairs (alice/bob/carol) with nsec for the app login form.
+- **Mint**: default is `https://nofee.testnut.cashu.space` — FAKE ecash,
+  fake Lightning (invoices auto-settle ~seconds; great for wallet tests).
+  NO real funds until the stack is thoroughly tested (user decision).
+  Don't use `testnut.cashu.space` — it runs bleeding-edge cdk with v2
+  keyset IDs ('01…') that cashu-ts 2.9 can't verify. And never
+  `mint.minibits.cash` — that one is real funds.
+- **Gotcha**: mints apply only at NEW wallet creation; a NIP-60 wallet event
+  pinned to a bad mint must be deleted (strfry delete on our relay + kind-5
+  to public relays) before re-login recreates it.
+
 ## State of the world (2026-07-10)
 
 The 10-phase maturation roadmap is COMPLETE: config injection
