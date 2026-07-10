@@ -10,7 +10,7 @@ allowBuilds:
   sharp: true
 
 # Keep in sync with cyphertap/pnpm-workspace.yaml (used when cyphertap is
-# consumed standalone): ndk-cache-dexie pins ndk@2.14.9 exactly; force the
+# consumed standalone): the NDK companion packages pin ndk exactly; force the
 # single version the other NDK packages resolve to.
 overrides:
-  "@nostr-dev-kit/ndk": 2.14.33
+  "@nostr-dev-kit/ndk": 2.15.2
