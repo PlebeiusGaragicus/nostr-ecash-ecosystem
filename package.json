@@ -1,0 +1,10 @@
+{
+	"name": "nostr-ecash-ecosystem",
+	"private": true,
+	"description": "Workspace for cyphertap (nostr/ecash button library, git submodule) and the apps that consume it",
+	"scripts": {
+		"build:lib": "pnpm --filter cyphertap package",
+		"build": "pnpm run build:lib && pnpm --filter './apps/*' build",
+		"check": "pnpm --filter cyphertap check && pnpm --filter './apps/*' check"
+	}
+}
