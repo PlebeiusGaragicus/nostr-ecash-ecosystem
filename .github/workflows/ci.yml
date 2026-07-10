@@ -28,8 +28,13 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # Apps resolve cyphertap types from its dist/, which is gitignored —
+      # build the library before type-checking anything that imports it.
+      - name: Build library dist
+        run: pnpm build:lib
+
       - name: Type check (library + apps)
         run: pnpm check
 
-      - name: Build (library dist, then apps)
-        run: pnpm build
+      - name: Build apps
+        run: pnpm --filter './apps/*' build
