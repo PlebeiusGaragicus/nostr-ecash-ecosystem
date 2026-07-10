@@ -77,7 +77,7 @@
 
 <style>
 	.status {
-		border: 1px solid #ddd4;
+		border: 1px solid var(--border);
 		border-radius: 0.75rem;
 		margin-bottom: 1rem;
 		overflow: hidden;
@@ -99,7 +99,7 @@
 		width: 0.5rem;
 		height: 0.5rem;
 		border-radius: 50%;
-		background: #22c55e;
+		background: var(--primary);
 		flex-shrink: 0;
 	}
 	.chev {
@@ -118,7 +118,7 @@
 	input {
 		font: inherit;
 		padding: 0.5rem 0.7rem;
-		border: 1px solid #ddd6;
+		border: 1px solid var(--input);
 		border-radius: 0.5rem;
 		background: transparent;
 		color: inherit;
@@ -142,19 +142,19 @@
 		font-size: 0.85em;
 		padding: 0.25rem 0.6rem;
 		border-radius: 999px;
-		border: 1px solid #ddd6;
+		border: 1px solid var(--input);
 		background: transparent;
 		color: inherit;
 		cursor: pointer;
 	}
 	.preset.active {
-		border-color: #22c55e;
-		color: #22c55e;
+		border-color: var(--primary);
+		color: var(--primary);
 	}
 	.publish {
-		background: #22c55e;
-		border-color: #22c55e;
-		color: #fff;
+		background: var(--primary);
+		border-color: var(--primary);
+		color: var(--primary-foreground);
 	}
 	.publish:disabled,
 	.clear:disabled {

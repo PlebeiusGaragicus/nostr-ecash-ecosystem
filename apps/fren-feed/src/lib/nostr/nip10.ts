@@ -6,6 +6,20 @@ export function isReply(note: Pick<SimpleNostrEvent, 'tags'>): boolean {
 }
 
 /**
+ * Id of the note this reply is directly responding to: the e tag marked
+ * 'reply', else the one marked 'root' (top-level reply), else — legacy
+ * unmarked threads — the last e tag (NIP-10 deprecated positional scheme).
+ */
+export function parentId(note: Pick<SimpleNostrEvent, 'tags'>): string | undefined {
+	const eTags = note.tags.filter((t) => t[0] === 'e' && t[1]);
+	return (
+		eTags.find((t) => t[3] === 'reply')?.[1] ??
+		eTags.find((t) => t[3] === 'root')?.[1] ??
+		eTags.at(-1)?.[1]
+	);
+}
+
+/**
  * Tags for a kind-1 reply to `target`, per NIP-10 marked tags:
  * - replying to a root post: e[root] = target
  * - replying to a reply: carry the thread's root marker, mark target as reply

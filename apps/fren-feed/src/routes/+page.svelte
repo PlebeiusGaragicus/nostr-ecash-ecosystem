@@ -68,6 +68,14 @@
 				{#each filtered as note (note.id)}
 					<NoteCard {note} {feed} />
 				{/each}
+
+				{#if feed.exhausted}
+					<p class="notice">that's everything the relays have.</p>
+				{:else}
+					<button class="load-more" disabled={feed.loadingOlder} onclick={() => feed.loadOlder()}>
+						{feed.loadingOlder ? 'loading…' : 'load older posts'}
+					</button>
+				{/if}
 			{/if}
 		{/if}
 	{:else}
@@ -109,12 +117,33 @@
 		margin: 2rem 0;
 	}
 	.notice.error {
-		color: #ef4444;
+		color: var(--destructive);
 		opacity: 1;
 	}
 	.watching {
 		font-size: 0.8em;
 		opacity: 0.45;
 		margin: 0 0 0.25rem;
+	}
+	.load-more {
+		display: block;
+		width: 100%;
+		margin: 1rem 0 2rem;
+		padding: 0.5rem;
+		font: inherit;
+		font-size: 0.9em;
+		color: var(--muted-foreground);
+		background: transparent;
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		cursor: pointer;
+	}
+	.load-more:hover:not(:disabled) {
+		color: var(--foreground);
+		border-color: var(--ring);
+	}
+	.load-more:disabled {
+		opacity: 0.5;
+		cursor: default;
 	}
 </style>

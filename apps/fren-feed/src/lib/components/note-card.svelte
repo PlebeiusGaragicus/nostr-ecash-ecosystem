@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { cyphertap, type SimpleNostrEvent } from 'cyphertap';
-	import { isReply, replyTags } from '$lib/nostr/nip10.js';
+	import { isReply, parentId, replyTags } from '$lib/nostr/nip10.js';
 	import { relativeTime, isExpired } from '$lib/nostr/status.js';
 	import type { FeedState } from '$lib/nostr/feed-state.svelte.js';
+	import NoteContent from './note-content.svelte';
 
 	let { note, feed }: { note: SimpleNostrEvent; feed: FeedState } = $props();
 
@@ -10,6 +11,10 @@
 	const status = $derived.by(() => {
 		const s = feed.statuses.get(note.pubkey);
 		return s && !isExpired(s.tags, feed.now) ? s : undefined;
+	});
+	const parent = $derived.by(() => {
+		const id = parentId(note);
+		return id ? feed.parents.get(id) : undefined;
 	});
 
 	let imgFailed = $state(false);
@@ -46,7 +51,6 @@
 	<div class="body">
 		<header>
 			<strong>{feed.displayName(note.pubkey)}</strong>
-			{#if isReply(note)}<span class="badge">reply</span>{/if}
 			<time class="muted">{relativeTime(note.created_at, feed.now)}</time>
 		</header>
 
@@ -54,7 +58,18 @@
 			<p class="status"><span class="dot"></span>{status.content}</p>
 		{/if}
 
-		<p class="content">{note.content}</p>
+		{#if isReply(note)}
+			<blockquote class="parent">
+				{#if parent}
+					<span class="parent-author">↳ {feed.displayName(parent.pubkey)}</span>
+					<span class="parent-snippet">{parent.content.slice(0, 120)}{parent.content.length > 120 ? '…' : ''}</span>
+				{:else}
+					<span class="parent-author">↳ replying to an earlier note</span>
+				{/if}
+			</blockquote>
+		{/if}
+
+		<NoteContent content={note.content} {feed} />
 
 		<footer>
 			{#if sent}
@@ -85,7 +100,7 @@
 		display: flex;
 		gap: 0.75rem;
 		padding: 0.9rem 0;
-		border-bottom: 1px solid #ddd3;
+		border-bottom: 1px solid var(--border);
 	}
 	.avatar {
 		width: 2.5rem;
@@ -93,7 +108,7 @@
 		border-radius: 50%;
 		overflow: hidden;
 		flex-shrink: 0;
-		background: #8883;
+		background: var(--muted);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -105,7 +120,7 @@
 	}
 	.initial {
 		font-weight: 600;
-		opacity: 0.7;
+		color: var(--muted-foreground);
 	}
 	.body {
 		min-width: 0;
@@ -116,22 +131,15 @@
 		align-items: baseline;
 		gap: 0.5rem;
 	}
-	.badge {
-		font-size: 0.7em;
-		border: 1px solid #ddd6;
-		border-radius: 999px;
-		padding: 0.05rem 0.45rem;
-		opacity: 0.7;
-	}
 	.muted {
-		opacity: 0.5;
+		color: var(--muted-foreground);
 		font-size: 0.85em;
 		margin-left: auto;
 	}
 	.status {
 		margin: 0.15rem 0 0;
 		font-size: 0.85em;
-		opacity: 0.75;
+		color: var(--muted-foreground);
 		font-style: italic;
 		display: flex;
 		align-items: center;
@@ -141,15 +149,27 @@
 		width: 0.4rem;
 		height: 0.4rem;
 		border-radius: 50%;
-		background: #22c55e;
+		background: var(--primary);
 		flex-shrink: 0;
 	}
-	.content {
-		margin: 0.35rem 0 0.4rem;
-		white-space: pre-wrap;
-		overflow-wrap: anywhere;
-		max-height: 12rem;
-		overflow-y: auto;
+	.parent {
+		margin: 0.4rem 0 0;
+		padding: 0.35rem 0.6rem;
+		border-left: 2px solid var(--border);
+		font-size: 0.85em;
+		color: var(--muted-foreground);
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		gap: 0.1rem;
+	}
+	.parent-author {
+		font-weight: 500;
+	}
+	.parent-snippet {
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 	footer {
 		font-size: 0.85em;
@@ -157,14 +177,14 @@
 	.link {
 		background: none;
 		border: none;
-		color: #22c55e;
+		color: var(--primary);
 		cursor: pointer;
 		font: inherit;
 		font-size: 1em;
 		padding: 0;
 	}
 	.sent {
-		color: #22c55e;
+		color: var(--primary);
 	}
 	.reply-box {
 		display: flex;
@@ -175,18 +195,18 @@
 		flex: 1;
 		font: inherit;
 		padding: 0.4rem 0.6rem;
-		border: 1px solid #ddd6;
-		border-radius: 0.5rem;
+		border: 1px solid var(--input);
+		border-radius: calc(var(--radius) * 0.75);
 		background: transparent;
 		color: inherit;
 	}
 	.reply-box button {
 		font: inherit;
 		padding: 0.4rem 0.8rem;
-		border-radius: 0.5rem;
+		border-radius: calc(var(--radius) * 0.75);
 		border: none;
-		background: #22c55e;
-		color: #fff;
+		background: var(--primary);
+		color: var(--primary-foreground);
 		cursor: pointer;
 	}
 	.reply-box button:disabled {

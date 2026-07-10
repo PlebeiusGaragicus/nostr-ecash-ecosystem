@@ -27,7 +27,7 @@
 		flex: 1;
 		font: inherit;
 		padding: 0.45rem 0.7rem;
-		border: 1px solid #ddd6;
+		border: 1px solid var(--input);
 		border-radius: 0.5rem;
 		background: transparent;
 		color: inherit;
