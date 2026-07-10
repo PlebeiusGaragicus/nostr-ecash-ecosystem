@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { Cyphertap, cyphertap } from 'cyphertap';
+
+	const RELAYS = ['wss://relay.cypherflow.ai', 'wss://relay.damus.io'];
 </script>
 
 <main>
@@ -7,7 +9,7 @@
 	<p>A minimal app consuming the cyphertap library from the workspace.</p>
 
 	<div class="tap">
-		<Cyphertap />
+		<Cyphertap relays={RELAYS} />
 	</div>
 
 	{#if cyphertap.isLoggedIn}

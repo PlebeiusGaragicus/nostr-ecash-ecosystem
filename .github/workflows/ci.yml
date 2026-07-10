@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-workspace:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # Frozen lockfile failing on submodule-pointer / lockfile drift is a
+      # feature: it catches unsynced cyphertap bumps.
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check (library + apps)
+        run: pnpm check
+
+      - name: Build (library dist, then apps)
+        run: pnpm build
