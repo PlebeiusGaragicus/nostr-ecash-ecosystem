@@ -42,7 +42,7 @@ importers:
   cyphertap:
     dependencies:
       '@cashu/cashu-ts':
-        specifier: ^2.6.0
+        specifier: ^2.9.0
         version: 2.9.0
       '@castlenine/svelte-qrcode':
         specifier: ^2.3.0
@@ -72,7 +72,7 @@ importers:
         specifier: ^2.4.38
         version: 2.4.48(nostr-tools@2.23.9(typescript@5.9.3))(svelte@5.56.4(@typescript-eslint/types@8.63.0))
       '@nostr-dev-kit/ndk-wallet':
-        specifier: ^0.6.2
+        specifier: ^0.6.3
         version: 0.6.3(@cashu/cashu-ts@2.9.0)(@cashu/crypto@0.3.4)(nostr-tools@2.23.9(typescript@5.9.3))
       '@scure/base':
         specifier: ^2.0.0
