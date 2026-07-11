@@ -4,7 +4,7 @@
 	import { cyphertap, type SimpleNostrEvent } from 'cyphertap';
 	import { isReply, parentId, replyTags } from '$lib/nostr/nip10.js';
 	import { relativeTime, isExpired } from '$lib/nostr/status.js';
-	import { replyRelays, relayHint } from '$lib/nostr/reply-routing.js';
+	import { replyRelays, resolveReplyRelays, relayHint } from '$lib/nostr/reply-routing.js';
 	import type { FeedState } from '$lib/nostr/feed-state.svelte.js';
 	import NoteContent from './note-content.svelte';
 	import NoteStats from './note-stats.svelte';
@@ -30,6 +30,13 @@
 	let replyText = $state('');
 	let sending = $state(false);
 	let sent = $state(false);
+	// resolved outbox targets (baseline shown while the NIP-65 lookup runs)
+	let targetRelays = $state<string[] | undefined>();
+	$effect(() => {
+		if (!replying) return;
+		targetRelays = undefined;
+		resolveReplyRelays(note).then((r) => (targetRelays = r));
+	});
 
 	function openPost(e: MouseEvent) {
 		// let links, buttons, and inputs inside the card do their own thing
@@ -44,7 +51,7 @@
 		try {
 			await cyphertap.publishEvent(
 				{ kind: 1, content, tags: replyTags(note) },
-				{ relays: replyRelays(note) }
+				{ relays: targetRelays ?? (await resolveReplyRelays(note)) }
 			);
 			replyText = '';
 			replying = false;
@@ -113,7 +120,9 @@
 				/>
 				<button disabled={sending || !replyText.trim()} onclick={sendReply}>send</button>
 			</div>
-			<p class="reply-hint">→ {relayHint(replyRelays(note))}</p>
+			<p class="reply-hint">
+				→ {relayHint(targetRelays ?? replyRelays(note))}{targetRelays ? '' : ' …'}
+			</p>
 		{/if}
 	</div>
 </article>

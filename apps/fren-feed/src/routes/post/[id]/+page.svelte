@@ -6,7 +6,7 @@
 	import { RELAYS } from '$lib/relays.js';
 	import { feed, getPost } from '$lib/nostr/feed.svelte.js';
 	import { isReply, parentId, replyTags } from '$lib/nostr/nip10.js';
-	import { replyRelays, relayHint } from '$lib/nostr/reply-routing.js';
+	import { replyRelays, resolveReplyRelays, relayHint } from '$lib/nostr/reply-routing.js';
 	import NoteContent from '$lib/components/note-content.svelte';
 	import NoteStats from '$lib/components/note-stats.svelte';
 
@@ -18,6 +18,14 @@
 	let replyText = $state('');
 	let sending = $state(false);
 	let sent = $state(false);
+	// resolved outbox targets for the always-visible reply box
+	let targetRelays = $state<string[] | undefined>();
+	$effect(() => {
+		const n = note;
+		if (!n) return;
+		targetRelays = undefined;
+		resolveReplyRelays(n).then((r) => (targetRelays = r));
+	});
 
 	// Load (and reload when navigating parent → parent). Waits for login
 	// since fetching needs a connected NDK.
@@ -58,7 +66,7 @@
 		try {
 			await cyphertap.publishEvent(
 				{ kind: 1, content, tags: replyTags(note) },
-				{ relays: replyRelays(note) }
+				{ relays: targetRelays ?? (await resolveReplyRelays(note)) }
 			);
 			replyText = '';
 			sent = true;
@@ -140,7 +148,9 @@
 					{sent ? 'sent ✓' : 'reply'}
 				</button>
 			</div>
-			<p class="reply-hint">→ {relayHint(replyRelays(note))}</p>
+			<p class="reply-hint">
+				→ {relayHint(targetRelays ?? replyRelays(note))}{targetRelays ? '' : ' …'}
+			</p>
 		</article>
 	{/if}
 </div>
