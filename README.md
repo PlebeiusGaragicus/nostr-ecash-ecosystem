@@ -20,6 +20,15 @@ pnpm install
 pnpm --filter fren-feed dev    # or --filter demo
 ```
 
+**Log in with a whitelisted test account.** The apps default to our own
+strfry relay (`wss://relay.abvstudio.net`), which only accepts events from
+whitelisted pubkeys — the three test accounts in `.test-accounts.json`
+(gitignored; kept locally, keys in the homelab whitelist). "Create new
+account" produces a key the relay rejects; that's by design, and an
+onboarding workflow is out of scope for now. The default mint is
+`nofee.testnut.cashu.space` — fake test ecash, invoices auto-settle,
+**no real funds**.
+
 Apps consume the library **from source** — no build step; edits inside
 `cyphertap/` hot-reload straight into a running app. (If the library's
 Tailwind classes change, run `pnpm --filter cyphertap watch:css` to

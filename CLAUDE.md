@@ -72,12 +72,14 @@ auto-deploys its showcase. **A broken merge ships.**
 - **Relay**: `wss://relay.abvstudio.net` — our own strfry on the mac mini
   (homelab repo: `~/Downloads/2026-project`, docs/strfry.md), whitelisted:
   only pubkeys in `~/.strfry/whitelist.d/*.txt` (ssh host `mini`) can
-  publish; the app group file is `cyphertap.txt`. "Create new account" in
-  the apps generates a key the relay rejects — log in with a test account
-  instead. `relay.plebchat.me` is prepped in the homelab Caddyfile but needs
-  a DNS A record → 172.232.162.250 before it works.
-- **Test accounts**: `.test-accounts.json` (gitignored, repo root) — three
-  whitelisted keypairs (alice/bob/carol) with nsec for the app login form.
+  publish; the app group file is `cyphertap.txt`. This is the canonical
+  relay (there is no relay.plebchat.me).
+- **Test accounts — POLICY**: the apps are used ONLY with the whitelisted
+  test accounts in `.test-accounts.json` (gitignored, repo root — three
+  keypairs alice/bob/carol with nsec for the login form). "Create new
+  account" generates a key the relay rejects, and that's expected: a
+  create-account→whitelist onboarding workflow is deliberately out of
+  scope for now.
 - **Mint**: default is `https://nofee.testnut.cashu.space` — FAKE ecash,
   fake Lightning (invoices auto-settle ~seconds; great for wallet tests).
   NO real funds until the stack is thoroughly tested (user decision).
