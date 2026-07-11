@@ -5,6 +5,7 @@
 	import { isReply, parentId, replyTags } from '$lib/nostr/nip10.js';
 	import { relativeTime, isExpired } from '$lib/nostr/status.js';
 	import { replyRelays, resolveReplyRelays, relayHint } from '$lib/nostr/reply-routing.js';
+	import { broadcastOwnRelayList } from '$lib/nostr/relay-list.js';
 	import type { FeedState } from '$lib/nostr/feed-state.svelte.js';
 	import NoteContent from './note-content.svelte';
 	import NoteStats from './note-stats.svelte';
@@ -49,10 +50,10 @@
 		if (!content) return;
 		sending = true;
 		try {
-			await cyphertap.publishEvent(
-				{ kind: 1, content, tags: replyTags(note) },
-				{ relays: targetRelays ?? (await resolveReplyRelays(note)) }
-			);
+			const relays = targetRelays ?? (await resolveReplyRelays(note));
+			await cyphertap.publishEvent({ kind: 1, content, tags: replyTags(note) }, { relays });
+			// NIP-65: send our kind 10002 to all relays the event went to
+			broadcastOwnRelayList(relays);
 			replyText = '';
 			replying = false;
 			sent = true;

@@ -4,6 +4,7 @@ import { cyphertap, type SimpleNostrEvent } from 'cyphertap';
 import { SvelteMap } from 'svelte/reactivity';
 import { STATUS_KIND, STATUS_DTAG } from './status.js';
 import { parentId } from './nip10.js';
+import { ensureOwnRelayList, clearOwnRelayList } from './relay-list.js';
 
 export interface Profile {
 	name?: string;
@@ -73,6 +74,8 @@ export class FeedState {
 				)
 			);
 			this.#ticker = setInterval(() => (this.now = NOW()), 30_000);
+			// advertise where this user reads/writes (NIP-65) — fire and forget
+			ensureOwnRelayList().catch(() => {});
 		} catch (e) {
 			this.error = e instanceof Error ? e.message : String(e);
 		} finally {
@@ -98,6 +101,7 @@ export class FeedState {
 		this.#olderCursor = undefined;
 		this.#emptyRounds = 0;
 		this.startedAt = 0;
+		clearOwnRelayList();
 	}
 
 	/**
