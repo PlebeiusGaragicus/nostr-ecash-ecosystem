@@ -4,6 +4,7 @@
 	import { cyphertap, type SimpleNostrEvent } from 'cyphertap';
 	import { isReply, parentId, replyTags } from '$lib/nostr/nip10.js';
 	import { relativeTime, isExpired } from '$lib/nostr/status.js';
+	import { replyRelays, relayHint } from '$lib/nostr/reply-routing.js';
 	import type { FeedState } from '$lib/nostr/feed-state.svelte.js';
 	import NoteContent from './note-content.svelte';
 	import NoteStats from './note-stats.svelte';
@@ -41,7 +42,10 @@
 		if (!content) return;
 		sending = true;
 		try {
-			await cyphertap.publishEvent({ kind: 1, content, tags: replyTags(note) });
+			await cyphertap.publishEvent(
+				{ kind: 1, content, tags: replyTags(note) },
+				{ relays: replyRelays(note) }
+			);
 			replyText = '';
 			replying = false;
 			sent = true;
@@ -109,6 +113,7 @@
 				/>
 				<button disabled={sending || !replyText.trim()} onclick={sendReply}>send</button>
 			</div>
+			<p class="reply-hint">→ {relayHint(replyRelays(note))}</p>
 		{/if}
 	</div>
 </article>
@@ -194,7 +199,8 @@
 		text-overflow: ellipsis;
 	}
 	.show-more {
-		display: inline-block;
+		display: block;
+		text-align: center;
 		color: var(--primary);
 		font-size: 0.85em;
 		text-decoration: none;
@@ -244,5 +250,10 @@
 	.reply-box button:disabled {
 		opacity: 0.5;
 		cursor: default;
+	}
+	.reply-hint {
+		margin: 0.3rem 0 0;
+		font-size: 0.7rem;
+		color: var(--muted-foreground);
 	}
 </style>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	import { parseContent } from '$lib/nostr/content.js';
 	import type { FeedState } from '$lib/nostr/feed-state.svelte.js';
 
@@ -22,7 +23,8 @@
 			{#if brokenImages.has(seg.url)}
 				<a href={seg.url} target="_blank" rel="noopener noreferrer">{seg.url}</a>
 			{:else}
-				<a class="img-wrap" href={seg.url} target="_blank" rel="noopener noreferrer">
+				<!-- media stays inside the app — full view on its own page -->
+				<a class="img-wrap" href={`${base}/media?src=${encodeURIComponent(seg.url)}`}>
 					<img src={seg.url} alt="" loading="lazy" onerror={() => markBroken(seg.url)} />
 				</a>
 			{/if}
@@ -45,10 +47,23 @@
 	/* Feed cards: clamp long posts with a fade — never scroll inside a card;
 	   the full post view shows everything. */
 	.content.truncated {
+		position: relative;
 		max-height: 16rem;
 		overflow: hidden;
 		-webkit-mask-image: linear-gradient(to bottom, black 82%, transparent 100%);
 		mask-image: linear-gradient(to bottom, black 82%, transparent 100%);
+	}
+	/* click shield over the faded zone: a mostly-invisible link would still
+	   be clickable and surprise the user — clicks here fall through to the
+	   card and open the post instead */
+	.content.truncated::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 40%;
+		cursor: pointer;
 	}
 	a {
 		color: var(--primary);
