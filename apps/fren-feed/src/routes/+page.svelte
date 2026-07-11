@@ -1,28 +1,17 @@
 <script lang="ts">
 	import { Cyphertap, cyphertap } from 'cyphertap';
 	import { RELAYS } from '$lib/relays.js';
-	import { FeedState } from '$lib/nostr/feed-state.svelte.js';
+	import { feed } from '$lib/nostr/feed.svelte.js';
 	import { isReply } from '$lib/nostr/nip10.js';
 	import StatusEditor from '$lib/components/status-editor.svelte';
 	import FilterBar from '$lib/components/filter-bar.svelte';
 	import NoteCard from '$lib/components/note-card.svelte';
 
-	const feed = new FeedState();
-	let started = $state(false);
-
-	// Start the feed once logged in; tear it down on logout.
-	$effect(() => {
-		if (cyphertap.isLoggedIn && !started) {
-			started = true;
-			feed.start();
-		} else if (!cyphertap.isLoggedIn && started) {
-			started = false;
-			feed.stop();
-		}
-	});
+	const PAGE_SIZE = 30;
 
 	let search = $state('');
 	let showReplies = $state(true);
+	let displayLimit = $state(PAGE_SIZE);
 
 	const filtered = $derived.by(() => {
 		const q = search.trim().toLowerCase();
@@ -34,6 +23,69 @@
 				feed.displayName(note.pubkey).toLowerCase().includes(q)
 			);
 		});
+	});
+	const visible = $derived(filtered.slice(0, displayLimit));
+
+	// Infinite scroll: when the sentinel enters the viewport, widen the
+	// render window; when the loaded notes run out, backfill older ones
+	// from the relays.
+	let sentinel = $state<HTMLElement | undefined>();
+	let backfilling = false;
+
+	async function loadNextChunk() {
+		// grow the render window only when it's actually saturated — while the
+		// live stream is still filling it there's nothing to extend
+		if (visible.length >= displayLimit) {
+			displayLimit += PAGE_SIZE;
+			return;
+		}
+		// window not full: backfill older history, but give the live stream a
+		// grace period to deliver first (backfilling against a half-warm
+		// stream just duplicates it)
+		if (Date.now() / 1000 - feed.startedAt < 8) return;
+		if (feed.exhausted || feed.loading || backfilling) return;
+		backfilling = true;
+		try {
+			// a backfill page can consist entirely of already-seen events
+			// (cursor still advances) — pull a few rounds until something
+			// new is renderable or the relays run dry
+			const target = filtered.length + PAGE_SIZE;
+			for (let round = 0; round < 5 && !feed.exhausted && filtered.length < target; round++) {
+				const before = feed.notes.length;
+				await feed.loadOlder();
+				if (feed.notes.length === before) break; // nothing new — let the next scroll retry
+			}
+		} finally {
+			backfilling = false;
+		}
+	}
+
+	// The observer only fires on intersection CHANGES — if a round loads
+	// nothing (relays still connecting, duplicate page) the sentinel stays
+	// visible and no further event comes. So the observer just tracks
+	// visibility, and a polling loop keeps pulling while it's on screen.
+	let sentinelVisible = $state(false);
+	$effect(() => {
+		if (!sentinel) return;
+		const observer = new IntersectionObserver(
+			(entries) => (sentinelVisible = entries.some((e) => e.isIntersecting)),
+			{ rootMargin: '600px' }
+		);
+		observer.observe(sentinel);
+		return () => observer.disconnect();
+	});
+	$effect(() => {
+		if (!sentinelVisible) return;
+		let cancelled = false;
+		(async () => {
+			while (!cancelled && sentinelVisible && !feed.exhausted) {
+				await loadNextChunk();
+				await new Promise((r) => setTimeout(r, 800));
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
 	});
 </script>
 
@@ -59,22 +111,21 @@
 				this key follows nobody yet — follow some frens from another client and reload.
 			</p>
 		{:else}
-			<FilterBar bind:search bind:showReplies shown={filtered.length} total={feed.notes.length} />
+			<FilterBar bind:search bind:showReplies shown={visible.length} total={feed.notes.length} />
 			<p class="watching">watching {feed.followCount} frens on {RELAYS.length} relays</p>
 
-			{#if filtered.length === 0}
+			{#if visible.length === 0}
 				<p class="notice">nothing here yet — posts will stream in live.</p>
 			{:else}
-				{#each filtered as note (note.id)}
+				{#each visible as note (note.id)}
 					<NoteCard {note} {feed} />
 				{/each}
 
-				{#if feed.exhausted}
+				<div class="sentinel" bind:this={sentinel}></div>
+				{#if feed.loadingOlder}
+					<p class="notice">loading older posts…</p>
+				{:else if feed.exhausted && visible.length >= filtered.length}
 					<p class="notice">that's everything the relays have.</p>
-				{:else}
-					<button class="load-more" disabled={feed.loadingOlder} onclick={() => feed.loadOlder()}>
-						{feed.loadingOlder ? 'loading…' : 'load older posts'}
-					</button>
 				{/if}
 			{/if}
 		{/if}
@@ -125,25 +176,7 @@
 		opacity: 0.45;
 		margin: 0 0 0.25rem;
 	}
-	.load-more {
-		display: block;
-		width: 100%;
-		margin: 1rem 0 2rem;
-		padding: 0.5rem;
-		font: inherit;
-		font-size: 0.9em;
-		color: var(--muted-foreground);
-		background: transparent;
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		cursor: pointer;
-	}
-	.load-more:hover:not(:disabled) {
-		color: var(--foreground);
-		border-color: var(--ring);
-	}
-	.load-more:disabled {
-		opacity: 0.5;
-		cursor: default;
+	.sentinel {
+		height: 1px;
 	}
 </style>

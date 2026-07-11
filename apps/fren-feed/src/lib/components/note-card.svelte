@@ -1,9 +1,12 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
 	import { cyphertap, type SimpleNostrEvent } from 'cyphertap';
 	import { isReply, parentId, replyTags } from '$lib/nostr/nip10.js';
 	import { relativeTime, isExpired } from '$lib/nostr/status.js';
 	import type { FeedState } from '$lib/nostr/feed-state.svelte.js';
 	import NoteContent from './note-content.svelte';
+	import NoteStats from './note-stats.svelte';
 
 	let { note, feed }: { note: SimpleNostrEvent; feed: FeedState } = $props();
 
@@ -16,12 +19,22 @@
 		const id = parentId(note);
 		return id ? feed.parents.get(id) : undefined;
 	});
+	// clamp text-heavy posts in the feed; the post view shows everything
+	const isLong = $derived(
+		note.content.length > 500 || (note.content.match(/\n/g)?.length ?? 0) > 8
+	);
 
 	let imgFailed = $state(false);
 	let replying = $state(false);
 	let replyText = $state('');
 	let sending = $state(false);
 	let sent = $state(false);
+
+	function openPost(e: MouseEvent) {
+		// let links, buttons, and inputs inside the card do their own thing
+		if ((e.target as HTMLElement).closest('a, button, input, textarea, pre')) return;
+		goto(`${base}/post/${note.id}`);
+	}
 
 	async function sendReply() {
 		const content = replyText.trim();
@@ -39,7 +52,8 @@
 	}
 </script>
 
-<article class="card">
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
+<article class="card" onclick={openPost}>
 	<div class="avatar">
 		{#if profile?.picture && !imgFailed}
 			<img src={profile.picture} alt="" loading="lazy" onerror={() => (imgFailed = true)} />
@@ -52,6 +66,7 @@
 		<header>
 			<strong>{feed.displayName(note.pubkey)}</strong>
 			<time class="muted">{relativeTime(note.created_at, feed.now)}</time>
+			<NoteStats {note} />
 		</header>
 
 		{#if status}
@@ -69,7 +84,10 @@
 			</blockquote>
 		{/if}
 
-		<NoteContent content={note.content} {feed} />
+		<NoteContent content={note.content} {feed} truncated={isLong} />
+		{#if isLong}
+			<a class="show-more" href={`${base}/post/${note.id}`}>show more</a>
+		{/if}
 
 		<footer>
 			{#if sent}
@@ -101,6 +119,10 @@
 		gap: 0.75rem;
 		padding: 0.9rem 0;
 		border-bottom: 1px solid var(--border);
+		cursor: pointer;
+	}
+	.card:hover {
+		background: color-mix(in oklab, var(--muted) 35%, transparent);
 	}
 	.avatar {
 		width: 2.5rem;
@@ -170,6 +192,16 @@
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
+	}
+	.show-more {
+		display: inline-block;
+		color: var(--primary);
+		font-size: 0.85em;
+		text-decoration: none;
+		margin: -0.1rem 0 0.3rem;
+	}
+	.show-more:hover {
+		text-decoration: underline;
 	}
 	footer {
 		font-size: 0.85em;

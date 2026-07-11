@@ -2,7 +2,11 @@
 	import { parseContent } from '$lib/nostr/content.js';
 	import type { FeedState } from '$lib/nostr/feed-state.svelte.js';
 
-	let { content, feed }: { content: string; feed: FeedState } = $props();
+	let {
+		content,
+		feed,
+		truncated = false
+	}: { content: string; feed: FeedState; truncated?: boolean } = $props();
 
 	const segments = $derived(parseContent(content));
 	let brokenImages = $state(new Set<string>());
@@ -12,7 +16,7 @@
 	}
 </script>
 
-<p class="content">
+<p class="content" class:truncated>
 	{#each segments as seg, i (i)}
 		{#if seg.type === 'text'}{seg.text}{:else if seg.type === 'image'}
 			{#if brokenImages.has(seg.url)}
@@ -37,8 +41,14 @@
 		margin: 0.35rem 0 0.4rem;
 		white-space: pre-wrap;
 		overflow-wrap: anywhere;
-		max-height: 24rem;
-		overflow-y: auto;
+	}
+	/* Feed cards: clamp long posts with a fade — never scroll inside a card;
+	   the full post view shows everything. */
+	.content.truncated {
+		max-height: 16rem;
+		overflow: hidden;
+		-webkit-mask-image: linear-gradient(to bottom, black 82%, transparent 100%);
+		mask-image: linear-gradient(to bottom, black 82%, transparent 100%);
 	}
 	a {
 		color: var(--primary);

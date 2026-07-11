@@ -86,6 +86,10 @@ auto-deploys its showcase. **A broken merge ships.**
   Don't use `testnut.cashu.space` — it runs bleeding-edge cdk with v2
   keyset IDs ('01…') that cashu-ts 2.9 can't verify. And never
   `mint.minibits.cash` — that one is real funds.
+- **Gotcha**: the relay rejects events with created_at older than 3 days
+  (`rejectEventsOlderThanSeconds = 259200` in strfry.conf) — backdated
+  seeds/imports beyond that silently fail. It also purges events older
+  than 60 days (daily cron).
 - **Gotcha**: mints apply only at NEW wallet creation; a NIP-60 wallet event
   pinned to a bad mint must be deleted (strfry delete on our relay + kind-5
   to public relays) before re-login recreates it.

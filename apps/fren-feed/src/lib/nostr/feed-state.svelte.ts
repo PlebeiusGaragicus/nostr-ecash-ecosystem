@@ -12,7 +12,8 @@ export interface Profile {
 }
 
 const NOW = () => Math.floor(Date.now() / 1000);
-const OLDER_PAGE_SIZE = 50;
+const BACKFILL_WINDOW_SECONDS = 86400; // one day per backfill round
+const MAX_EMPTY_WINDOWS = 14; // two silent weeks = end of history
 
 export class FeedState {
 	notes = $state<SimpleNostrEvent[]>([]);
@@ -28,8 +29,12 @@ export class FeedState {
 	error = $state('');
 	/** Ticks every 30s so relative timestamps and status expiry stay live. */
 	now = $state(NOW());
+	/** When start() ran (unix seconds); 0 = not started. */
+	startedAt = 0;
 
 	#authors: string[] = [];
+	#olderCursor: number | undefined;
+	#emptyRounds = 0;
 	#seen = new Set<string>();
 	#unsubs: (() => void)[] = [];
 	#ticker: ReturnType<typeof setInterval> | undefined;
@@ -41,6 +46,7 @@ export class FeedState {
 
 	async start(): Promise<void> {
 		this.loading = true;
+		this.startedAt = NOW();
 		this.error = '';
 		try {
 			const me = cyphertap.getUserHex();
@@ -89,23 +95,43 @@ export class FeedState {
 		this.followCount = 0;
 		this.exhausted = false;
 		this.#authors = [];
+		this.#olderCursor = undefined;
+		this.#emptyRounds = 0;
+		this.startedAt = 0;
 	}
 
-	/** Backfill one page of older notes (until-pagination). */
+	/**
+	 * Backfill one fixed time window (24h) of older notes. Cursor-by-oldest
+	 * or by-percentile pagination breaks against caching relays (primal),
+	 * which mix ancient outliers into pages — any event-derived cursor
+	 * eventually teleports past real history. Fixed since/until windows
+	 * descend deterministically and cover everything: outliers can't steer
+	 * the cursor, and empty windows just move on. Exhaustion = two weeks of
+	 * consecutive empty windows (our own relay purges at 60 days anyway).
+	 */
 	async loadOlder(): Promise<void> {
-		if (this.loadingOlder || !this.notes.length) return;
+		if (this.loadingOlder || this.exhausted) return;
+		// during app startup the relays may not be connected yet — an empty
+		// window then says nothing about relay history
+		if (cyphertap.getConnectionStatus().connected === 0) return;
 		this.loadingOlder = true;
 		try {
-			const oldest = this.notes[this.notes.length - 1].created_at;
-			const older = await cyphertap.fetchEvents({
+			const until = this.#olderCursor ?? NOW();
+			const since = until - BACKFILL_WINDOW_SECONDS;
+			const page = await cyphertap.fetchEvents({
 				kinds: [1],
 				authors: this.#authors,
-				until: oldest - 1,
-				limit: OLDER_PAGE_SIZE
+				since,
+				until,
+				limit: 500
 			});
-			const fresh = older.filter((e) => !this.#seen.has(e.id));
-			if (!fresh.length) this.exhausted = true;
-			for (const e of fresh) this.#addNote(e);
+			this.#olderCursor = since - 1;
+			if (!page.length) {
+				if (++this.#emptyRounds >= MAX_EMPTY_WINDOWS) this.exhausted = true;
+				return;
+			}
+			this.#emptyRounds = 0;
+			for (const e of page) this.#addNote(e);
 		} finally {
 			this.loadingOlder = false;
 		}
